@@ -343,798 +343,1054 @@ Imagine you're tasked with building a **food delivery application** like Zomato 
 
 ## 💻 Java Implementation
 
+### Project Structure
+```
+com.tomato/
+├── models/
+│   ├── MenuItem.java
+│   ├── Restaurant.java
+│   ├── User.java
+│   ├── Cart.java
+│   ├── Order.java (abstract)
+│   ├── DeliveryOrder.java
+│   └── PickupOrder.java
+├── managers/
+│   ├── RestaurantManager.java (Singleton)
+│   └── OrderManager.java (Singleton)
+├── factories/
+│   ├── OrderFactory.java (interface)
+│   ├── NowOrderFactory.java
+│   └── ScheduledOrderFactory.java
+├── strategies/
+│   ├── PaymentStrategy.java (interface)
+│   ├── UPIPayment.java
+│   ├── CreditCardPayment.java
+│   └── NetBankingPayment.java
+├── services/
+│   └── NotificationService.java
+├── utils/
+│   └── TimeUtils.java
+├── TomatoApp.java (Orchestrator)
+└── Main.java (Driver)
+```
+
+---
+
 ### 1. Model Classes
 
-#### MenuItem.h
-```cpp
-#ifndef MENUITEM_H
-#define MENUITEM_H
+#### MenuItem.java
+```java
+package com.tomato.models;
 
-#include <string>
-using namespace std;
+public class MenuItem {
+    private String code;
+    private String name;
+    private double price;
 
-class MenuItem {
-private:
-    string code;
-    string name;
-    double price;
-
-public:
-    MenuItem(string code, string name, double price) 
-        : code(code), name(name), price(price) {}
-    
-    // Getters
-    string getCode() const { return code; }
-    string getName() const { return name; }
-    double getPrice() const { return price; }
-    
-    // Setters
-    void setCode(string c) { code = c; }
-    void setName(string n) { name = n; }
-    void setPrice(double p) { price = p; }
-};
-
-#endif
-```
-
-#### Restaurant.h
-```cpp
-#ifndef RESTAURANT_H
-#define RESTAURANT_H
-
-#include <string>
-#include <vector>
-#include "MenuItem.h"
-using namespace std;
-
-class Restaurant {
-private:
-    static int nextRestaurantId;
-    int id;
-    string name;
-    string location;
-    vector<MenuItem*> menu;
-
-public:
-    Restaurant(string name, string location) 
-        : id(nextRestaurantId++), name(name), location(location) {}
-    
-    ~Restaurant() {
-        for(auto item : menu) delete item;
+    public MenuItem(String code, String name, double price) {
+        this.code = code;
+        this.name = name;
+        this.price = price;
     }
-    
+
     // Getters
-    int getId() const { return id; }
-    string getName() const { return name; }
-    string getLocation() const { return location; }
-    vector<MenuItem*> getMenu() const { return menu; }
-    
+    public String getCode() { return code; }
+    public String getName() { return name; }
+    public double getPrice() { return price; }
+
     // Setters
-    void setName(string n) { name = n; }
-    void setLocation(string loc) { location = loc; }
-    void addMenuItem(MenuItem* item) { menu.push_back(item); }
-};
+    public void setCode(String code) { this.code = code; }
+    public void setName(String name) { this.name = name; }
+    public void setPrice(double price) { this.price = price; }
 
-int Restaurant::nextRestaurantId = 0;
-
-#endif
+    @Override
+    public String toString() {
+        return name + " ($" + price + ")";
+    }
+}
 ```
 
-#### Cart.h
-```cpp
-#ifndef CART_H
-#define CART_H
+#### Restaurant.java
+```java
+package com.tomato.models;
 
-#include <vector>
-#include "Restaurant.h"
-#include "MenuItem.h"
-using namespace std;
+import java.util.ArrayList;
+import java.util.List;
 
-class Cart {
-private:
-    Restaurant* restaurant;
-    vector<MenuItem*> items;
-    double total;
-
-public:
-    Cart() : restaurant(nullptr), total(0.0) {}
+public class Restaurant {
+    private static int nextRestaurantId = 0;
     
-    void addItem(MenuItem* item) {
-        if (restaurant == nullptr) {
-            cout << "Please select a restaurant first!" << endl;
+    private int id;
+    private String name;
+    private String location;
+    private List<MenuItem> menu;
+
+    public Restaurant(String name, String location) {
+        this.id = nextRestaurantId++;
+        this.name = name;
+        this.location = location;
+        this.menu = new ArrayList<>();
+    }
+
+    public void addMenuItem(MenuItem item) {
+        menu.add(item);
+    }
+
+    // Getters
+    public int getId() { return id; }
+    public String getName() { return name; }
+    public String getLocation() { return location; }
+    public List<MenuItem> getMenu() { return menu; }
+
+    // Setters
+    public void setName(String name) { this.name = name; }
+    public void setLocation(String location) { this.location = location; }
+
+    @Override
+    public String toString() {
+        return name + " (" + location + ")";
+    }
+}
+```
+
+#### Cart.java
+```java
+package com.tomato.models;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Cart {
+    private Restaurant restaurant;
+    private List<MenuItem> items;
+    private double total;
+
+    public Cart() {
+        this.items = new ArrayList<>();
+        this.total = 0.0;
+    }
+
+    public void addItem(MenuItem item) {
+        if (restaurant == null) {
+            System.out.println("⚠️ Please select a restaurant first!");
             return;
         }
-        items.push_back(item);
-        total += item->getPrice();
+        items.add(item);
+        total += item.getPrice();
+        System.out.println("✅ Added: " + item.getName() + " to cart");
     }
-    
-    double getTotalCost() const {
+
+    public double getTotalCost() {
         double sum = 0;
-        for(auto item : items) {
-            sum += item->getPrice();
+        for (MenuItem item : items) {
+            sum += item.getPrice();
         }
         return sum;
     }
-    
-    bool isEmpty() const { return items.empty(); }
-    
-    void clear() {
+
+    public boolean isEmpty() {
+        return items.isEmpty();
+    }
+
+    public void clear() {
         items.clear();
         total = 0.0;
-        restaurant = nullptr;
+        restaurant = null;
+        System.out.println("🗑️ Cart cleared");
     }
-    
-    // Getters/Setters
-    Restaurant* getRestaurant() const { return restaurant; }
-    void setRestaurant(Restaurant* r) { restaurant = r; }
-    vector<MenuItem*> getItems() const { return items; }
-};
 
-#endif
-```
-
-#### User.h
-```cpp
-#ifndef USER_H
-#define USER_H
-
-#include <string>
-#include "Cart.h"
-using namespace std;
-
-class User {
-private:
-    int id;
-    string name;
-    string address;
-    Cart* cart;
-
-public:
-    User(int id, string name, string address) 
-        : id(id), name(name), address(address) {
-        cart = new Cart();
-    }
-    
-    ~User() { delete cart; }
-    
     // Getters
-    int getId() const { return id; }
-    string getName() const { return name; }
-    string getAddress() const { return address; }
-    Cart* getCart() const { return cart; }
-    
-    // Setters
-    void setName(string n) { name = n; }
-    void setAddress(string addr) { address = addr; }
-};
+    public Restaurant getRestaurant() { return restaurant; }
+    public List<MenuItem> getItems() { return items; }
+    public double getTotal() { return total; }
 
-#endif
+    // Setters
+    public void setRestaurant(Restaurant restaurant) { 
+        this.restaurant = restaurant; 
+    }
+}
 ```
+
+#### User.java
+```java
+package com.tomato.models;
+
+public class User {
+    private int id;
+    private String name;
+    private String address;
+    private Cart cart;
+
+    public User(int id, String name, String address) {
+        this.id = id;
+        this.name = name;
+        this.address = address;
+        this.cart = new Cart();
+    }
+
+    // Getters
+    public int getId() { return id; }
+    public String getName() { return name; }
+    public String getAddress() { return address; }
+    public Cart getCart() { return cart; }
+
+    // Setters
+    public void setName(String name) { this.name = name; }
+    public void setAddress(String address) { this.address = address; }
+
+    @Override
+    public String toString() {
+        return name + " (" + address + ")";
+    }
+}
+```
+
+---
 
 ### 2. Order Hierarchy
 
-#### Order.h (Abstract)
-```cpp
-#ifndef ORDER_H
-#define ORDER_H
+#### Order.java (Abstract Class)
+```java
+package com.tomato.models;
 
-#include <string>
-#include <vector>
-#include "User.h"
-#include "Restaurant.h"
-#include "MenuItem.h"
-#include "../strategies/PaymentStrategy.h"
-using namespace std;
+import com.tomato.strategies.PaymentStrategy;
+import java.util.List;
 
-class Order {
-protected:
-    static int nextOrderId;
-    int id;
-    User* user;
-    Restaurant* restaurant;
-    vector<MenuItem*> items;
-    PaymentStrategy* paymentStrategy;
-    double total;
-    string scheduled;
-
-public:
-    Order() : id(nextOrderId++), user(nullptr), 
-              restaurant(nullptr), paymentStrategy(nullptr), 
-              total(0.0) {}
+public abstract class Order {
+    private static int nextOrderId = 0;
     
-    virtual ~Order() {}
-    
-    void processPayment() {
-        if (paymentStrategy) {
-            paymentStrategy->pay(total);
+    protected int id;
+    protected User user;
+    protected Restaurant restaurant;
+    protected List<MenuItem> items;
+    protected PaymentStrategy paymentStrategy;
+    protected double total;
+    protected String scheduled;
+
+    public Order() {
+        this.id = nextOrderId++;
+    }
+
+    public void processPayment() {
+        if (paymentStrategy != null) {
+            paymentStrategy.pay(total);
         } else {
-            cout << "Please choose payment method first!" << endl;
+            System.out.println("❌ Please choose payment method first!");
         }
     }
-    
-    // Virtual method to be overridden
-    virtual string getType() const = 0;
-    
-    // Getters/Setters
-    int getId() const { return id; }
-    User* getUser() const { return user; }
-    Restaurant* getRestaurant() const { return restaurant; }
-    vector<MenuItem*> getItems() const { return items; }
-    double getTotal() const { return total; }
-    string getScheduled() const { return scheduled; }
-    
-    void setUser(User* u) { user = u; }
-    void setRestaurant(Restaurant* r) { restaurant = r; }
-    void setItems(vector<MenuItem*> i) { items = i; }
-    void setPaymentStrategy(PaymentStrategy* ps) { paymentStrategy = ps; }
-    void setTotal(double t) { total = t; }
-    void setScheduled(string s) { scheduled = s; }
-};
 
-int Order::nextOrderId = 0;
+    // Abstract method - must be implemented by subclasses
+    public abstract String getType();
 
-#endif
+    // Getters
+    public int getId() { return id; }
+    public User getUser() { return user; }
+    public Restaurant getRestaurant() { return restaurant; }
+    public List<MenuItem> getItems() { return items; }
+    public double getTotal() { return total; }
+    public String getScheduled() { return scheduled; }
+    public PaymentStrategy getPaymentStrategy() { return paymentStrategy; }
+
+    // Setters
+    public void setUser(User user) { this.user = user; }
+    public void setRestaurant(Restaurant restaurant) { this.restaurant = restaurant; }
+    public void setItems(List<MenuItem> items) { this.items = items; }
+    public void setPaymentStrategy(PaymentStrategy paymentStrategy) { 
+        this.paymentStrategy = paymentStrategy; 
+    }
+    public void setTotal(double total) { this.total = total; }
+    public void setScheduled(String scheduled) { this.scheduled = scheduled; }
+}
 ```
 
-#### DeliveryOrder.h
-```cpp
-#ifndef DELIVERYORDER_H
-#define DELIVERYORDER_H
+#### DeliveryOrder.java
+```java
+package com.tomato.models;
 
-#include "Order.h"
+public class DeliveryOrder extends Order {
+    private String userAddress;
 
-class DeliveryOrder : public Order {
-private:
-    string userAddress;
+    public DeliveryOrder() {
+        super();
+        this.userAddress = "";
+    }
 
-public:
-    DeliveryOrder() : Order(), userAddress("") {}
-    
-    string getType() const override {
+    @Override
+    public String getType() {
         return "DELIVERY";
     }
-    
-    string getUserAddress() const { return userAddress; }
-    void setUserAddress(string addr) { userAddress = addr; }
-};
 
-#endif
+    // Getters & Setters
+    public String getUserAddress() { return userAddress; }
+    public void setUserAddress(String userAddress) { 
+        this.userAddress = userAddress; 
+    }
+
+    @Override
+    public String toString() {
+        return "DeliveryOrder{" +
+                "id=" + id +
+                ", type=" + getType() +
+                ", deliverTo=" + userAddress +
+                ", total=$" + total +
+                '}';
+    }
+}
 ```
 
-#### PickupOrder.h
-```cpp
-#ifndef PICKUPORDER_H
-#define PICKUPORDER_H
+#### PickupOrder.java
+```java
+package com.tomato.models;
 
-#include "Order.h"
+public class PickupOrder extends Order {
+    private String restaurantAddress;
 
-class PickupOrder : public Order {
-private:
-    string restaurantAddress;
+    public PickupOrder() {
+        super();
+        this.restaurantAddress = "";
+    }
 
-public:
-    PickupOrder() : Order(), restaurantAddress("") {}
-    
-    string getType() const override {
+    @Override
+    public String getType() {
         return "PICKUP";
     }
-    
-    string getRestaurantAddress() const { return restaurantAddress; }
-    void setRestaurantAddress(string addr) { restaurantAddress = addr; }
-};
 
-#endif
+    // Getters & Setters
+    public String getRestaurantAddress() { return restaurantAddress; }
+    public void setRestaurantAddress(String restaurantAddress) { 
+        this.restaurantAddress = restaurantAddress; 
+    }
+
+    @Override
+    public String toString() {
+        return "PickupOrder{" +
+                "id=" + id +
+                ", type=" + getType() +
+                ", pickupFrom=" + restaurantAddress +
+                ", total=$" + total +
+                '}';
+    }
+}
 ```
 
-### 3. Manager Classes (Singleton)
+---
 
-#### RestaurantManager.h
-```cpp
-#ifndef RESTAURANTMANAGER_H
-#define RESTAURANTMANAGER_H
+### 3. Manager Classes (Singleton Pattern)
 
-#include <vector>
-#include "../models/Restaurant.h"
-using namespace std;
+#### RestaurantManager.java
+```java
+package com.tomato.managers;
 
-class RestaurantManager {
-private:
-    static RestaurantManager* instance;
-    vector<Restaurant*> restaurants;
+import com.tomato.models.Restaurant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class RestaurantManager {
+    // Singleton instance
+    private static RestaurantManager instance;
     
-    // Private constructor for Singleton
-    RestaurantManager() {}
+    private List<Restaurant> restaurants;
 
-public:
-    static RestaurantManager* getInstance() {
-        if (instance == nullptr) {
+    // Private constructor
+    private RestaurantManager() {
+        this.restaurants = new ArrayList<>();
+    }
+
+    // Thread-safe Singleton getInstance
+    public static synchronized RestaurantManager getInstance() {
+        if (instance == null) {
             instance = new RestaurantManager();
         }
         return instance;
     }
-    
-    void addRestaurant(Restaurant* r) {
-        restaurants.push_back(r);
+
+    public void addRestaurant(Restaurant restaurant) {
+        restaurants.add(restaurant);
+        System.out.println("✅ Restaurant added: " + restaurant.getName());
     }
-    
-    vector<Restaurant*> searchByLocation(string location) {
-        vector<Restaurant*> result;
-        for (auto restaurant : restaurants) {
-            if (restaurant->getLocation() == location) {
-                result.push_back(restaurant);
-            }
+
+    public List<Restaurant> searchByLocation(String location) {
+        return restaurants.stream()
+                .filter(r -> r.getLocation().equalsIgnoreCase(location))
+                .collect(Collectors.toList());
+    }
+
+    public List<Restaurant> getAllRestaurants() {
+        return new ArrayList<>(restaurants);
+    }
+
+    public void listAllRestaurants() {
+        System.out.println("\n=== All Restaurants ===");
+        for (Restaurant r : restaurants) {
+            System.out.println("- " + r);
         }
-        return result;
     }
-    
-    vector<Restaurant*> getAllRestaurants() const {
-        return restaurants;
-    }
-};
-
-RestaurantManager* RestaurantManager::instance = nullptr;
-
-#endif
+}
 ```
 
-#### OrderManager.h
-```cpp
-#ifndef ORDERMANAGER_H
-#define ORDERMANAGER_H
+#### OrderManager.java
+```java
+package com.tomato.managers;
 
-#include <vector>
-#include <iostream>
-#include "../models/Order.h"
-using namespace std;
+import com.tomato.models.Order;
+import java.util.ArrayList;
+import java.util.List;
 
-class OrderManager {
-private:
-    static OrderManager* instance;
-    vector<Order*> orders;
+public class OrderManager {
+    // Singleton instance
+    private static OrderManager instance;
     
-    OrderManager() {}
+    private List<Order> orders;
 
-public:
-    static OrderManager* getInstance() {
-        if (instance == nullptr) {
+    // Private constructor
+    private OrderManager() {
+        this.orders = new ArrayList<>();
+    }
+
+    // Thread-safe Singleton getInstance
+    public static synchronized OrderManager getInstance() {
+        if (instance == null) {
             instance = new OrderManager();
         }
         return instance;
     }
-    
-    void addOrder(Order* order) {
-        orders.push_back(order);
+
+    public void addOrder(Order order) {
+        orders.add(order);
+        System.out.println("✅ Order added to system: Order #" + order.getId());
     }
-    
-    void listOrders() {
-        cout << "\n=== All Orders ===" << endl;
-        for (auto order : orders) {
-            cout << "Order ID: " << order->getId() 
-                 << " | Type: " << order->getType()
-                 << " | Total: $" << order->getTotal() << endl;
+
+    public void listOrders() {
+        System.out.println("\n========== ALL ORDERS ==========");
+        if (orders.isEmpty()) {
+            System.out.println("No orders yet!");
+            return;
         }
+        
+        for (Order order : orders) {
+            System.out.println("Order #" + order.getId() + 
+                             " | Type: " + order.getType() + 
+                             " | Total: $" + String.format("%.2f", order.getTotal()) +
+                             " | Restaurant: " + order.getRestaurant().getName());
+        }
+        System.out.println("================================\n");
     }
-};
 
-OrderManager* OrderManager::instance = nullptr;
-
-#endif
+    public List<Order> getAllOrders() {
+        return new ArrayList<>(orders);
+    }
+}
 ```
+
+---
 
 ### 4. Factory Pattern (Order Creation)
 
-#### OrderFactory.h (Interface)
-```cpp
-#ifndef ORDERFACTORY_H
-#define ORDERFACTORY_H
+#### OrderFactory.java (Interface)
+```java
+package com.tomato.factories;
 
-#include "../models/Order.h"
-#include "../models/User.h"
-#include "../models/Cart.h"
-#include "../models/Restaurant.h"
-#include "../strategies/PaymentStrategy.h"
-#include <string>
-using namespace std;
+import com.tomato.models.*;
+import com.tomato.strategies.PaymentStrategy;
+import java.util.List;
 
-class OrderFactory {
-public:
-    virtual Order* createOrder(
-        User* user,
-        Cart* cart,
-        Restaurant* restaurant,
-        vector<MenuItem*> items,
-        PaymentStrategy* paymentStrategy,
-        string orderType,
+public interface OrderFactory {
+    Order createOrder(
+        User user,
+        Cart cart,
+        Restaurant restaurant,
+        List<MenuItem> items,
+        PaymentStrategy paymentStrategy,
+        String orderType,
         double totalCost
-    ) = 0;
-    
-    virtual ~OrderFactory() {}
-};
-
-#endif
+    );
+}
 ```
 
-#### NowOrderFactory.h
-```cpp
-#ifndef NOWORDERFACTORY_H
-#define NOWORDERFACTORY_H
+#### NowOrderFactory.java
+```java
+package com.tomato.factories;
 
-#include "OrderFactory.h"
-#include "../models/DeliveryOrder.h"
-#include "../models/PickupOrder.h"
-#include "../utils/TimeUtils.h"
+import com.tomato.models.*;
+import com.tomato.strategies.PaymentStrategy;
+import com.tomato.utils.TimeUtils;
+import java.util.List;
 
-class NowOrderFactory : public OrderFactory {
-public:
-    Order* createOrder(
-        User* user,
-        Cart* cart,
-        Restaurant* restaurant,
-        vector<MenuItem*> items,
-        PaymentStrategy* paymentStrategy,
-        string orderType,
+public class NowOrderFactory implements OrderFactory {
+    
+    @Override
+    public Order createOrder(
+        User user,
+        Cart cart,
+        Restaurant restaurant,
+        List<MenuItem> items,
+        PaymentStrategy paymentStrategy,
+        String orderType,
         double totalCost
-    ) override {
-        Order* order = nullptr;
+    ) {
+        Order order = null;
         
-        if (orderType == "DELIVERY") {
-            DeliveryOrder* deliveryOrder = new DeliveryOrder();
-            deliveryOrder->setUserAddress(user->getAddress());
+        // Create appropriate order type
+        if (orderType.equalsIgnoreCase("DELIVERY")) {
+            DeliveryOrder deliveryOrder = new DeliveryOrder();
+            deliveryOrder.setUserAddress(user.getAddress());
             order = deliveryOrder;
-        } else {
-            PickupOrder* pickupOrder = new PickupOrder();
-            pickupOrder->setRestaurantAddress(restaurant->getLocation());
+        } else if (orderType.equalsIgnoreCase("PICKUP")) {
+            PickupOrder pickupOrder = new PickupOrder();
+            pickupOrder.setRestaurantAddress(restaurant.getLocation());
             order = pickupOrder;
         }
         
         // Set common order properties
-        order->setUser(user);
-        order->setRestaurant(restaurant);
-        order->setItems(items);
-        order->setPaymentStrategy(paymentStrategy);
-        order->setScheduled(TimeUtils::getCurrentTime());
-        order->setTotal(totalCost);
+        if (order != null) {
+            order.setUser(user);
+            order.setRestaurant(restaurant);
+            order.setItems(items);
+            order.setPaymentStrategy(paymentStrategy);
+            order.setScheduled(TimeUtils.getCurrentTime());
+            order.setTotal(totalCost);
+        }
         
         return order;
     }
-};
-
-#endif
+}
 ```
 
-#### ScheduledOrderFactory.h
-```cpp
-#ifndef SCHEDULEDORDERFACTORY_H
-#define SCHEDULEDORDERFACTORY_H
+#### ScheduledOrderFactory.java
+```java
+package com.tomato.factories;
 
-#include "OrderFactory.h"
-#include "../models/DeliveryOrder.h"
-#include "../models/PickupOrder.h"
+import com.tomato.models.*;
+import com.tomato.strategies.PaymentStrategy;
+import java.util.List;
 
-class ScheduledOrderFactory : public OrderFactory {
-public:
-    Order* createOrder(
-        User* user,
-        Cart* cart,
-        Restaurant* restaurant,
-        vector<MenuItem*> items,
-        PaymentStrategy* paymentStrategy,
-        string orderType,
+public class ScheduledOrderFactory implements OrderFactory {
+    
+    @Override
+    public Order createOrder(
+        User user,
+        Cart cart,
+        Restaurant restaurant,
+        List<MenuItem> items,
+        PaymentStrategy paymentStrategy,
+        String orderType,
         double totalCost
-    ) override {
-        Order* order = nullptr;
+    ) {
+        Order order = null;
         
-        if (orderType == "DELIVERY") {
-            DeliveryOrder* deliveryOrder = new DeliveryOrder();
-            deliveryOrder->setUserAddress(user->getAddress());
+        // Create appropriate order type
+        if (orderType.equalsIgnoreCase("DELIVERY")) {
+            DeliveryOrder deliveryOrder = new DeliveryOrder();
+            deliveryOrder.setUserAddress(user.getAddress());
             order = deliveryOrder;
-        } else {
-            PickupOrder* pickupOrder = new PickupOrder();
-            pickupOrder->setRestaurantAddress(restaurant->getLocation());
+        } else if (orderType.equalsIgnoreCase("PICKUP")) {
+            PickupOrder pickupOrder = new PickupOrder();
+            pickupOrder.setRestaurantAddress(restaurant.getLocation());
             order = pickupOrder;
         }
         
-        order->setUser(user);
-        order->setRestaurant(restaurant);
-        order->setItems(items);
-        order->setPaymentStrategy(paymentStrategy);
-        order->setScheduled("2026-01-21 18:00"); // Scheduled for later
-        order->setTotal(totalCost);
+        // Set common order properties
+        if (order != null) {
+            order.setUser(user);
+            order.setRestaurant(restaurant);
+            order.setItems(items);
+            order.setPaymentStrategy(paymentStrategy);
+            order.setScheduled("2026-01-21 18:00:00"); // Scheduled for later
+            order.setTotal(totalCost);
+        }
         
         return order;
     }
-};
-
-#endif
+}
 ```
 
-### 5. Strategy Pattern (Payment)
+---
 
-#### PaymentStrategy.h (Interface)
-```cpp
-#ifndef PAYMENTSTRATEGY_H
-#define PAYMENTSTRATEGY_H
+### 5. Strategy Pattern (Payment Processing)
 
-class PaymentStrategy {
-public:
-    virtual void pay(double amount) = 0;
-    virtual ~PaymentStrategy() {}
-};
+#### PaymentStrategy.java (Interface)
+```java
+package com.tomato.strategies;
 
-#endif
+public interface PaymentStrategy {
+    void pay(double amount);
+}
 ```
 
-#### UPIPayment.h
-```cpp
-#ifndef UPIPAYMENT_H
-#define UPIPAYMENT_H
+#### UPIPayment.java
+```java
+package com.tomato.strategies;
 
-#include "PaymentStrategy.h"
-#include <iostream>
-#include <string>
-using namespace std;
+public class UPIPayment implements PaymentStrategy {
+    private String mobileNumber;
 
-class UPIPayment : public PaymentStrategy {
-private:
-    string mobileNumber;
-
-public:
-    UPIPayment(string mobile) : mobileNumber(mobile) {}
-    
-    void pay(double amount) override {
-        cout << "Paid $" << amount << " using UPI: " 
-             << mobileNumber << endl;
+    public UPIPayment(String mobileNumber) {
+        this.mobileNumber = mobileNumber;
     }
-};
 
-#endif
-```
-
-#### CreditCardPayment.h
-```cpp
-#ifndef CREDITCARDPAYMENT_H
-#define CREDITCARDPAYMENT_H
-
-#include "PaymentStrategy.h"
-#include <iostream>
-#include <string>
-using namespace std;
-
-class CreditCardPayment : public PaymentStrategy {
-private:
-    string cardNumber;
-
-public:
-    CreditCardPayment(string card) : cardNumber(card) {}
-    
-    void pay(double amount) override {
-        cout << "Paid $" << amount << " using Credit Card: " 
-             << cardNumber << endl;
+    @Override
+    public void pay(double amount) {
+        System.out.println("💳 Paid $" + String.format("%.2f", amount) + 
+                         " using UPI: " + mobileNumber);
     }
-};
 
-#endif
+    public String getMobileNumber() {
+        return mobileNumber;
+    }
+}
 ```
+
+#### CreditCardPayment.java
+```java
+package com.tomato.strategies;
+
+public class CreditCardPayment implements PaymentStrategy {
+    private String cardNumber;
+
+    public CreditCardPayment(String cardNumber) {
+        this.cardNumber = cardNumber;
+    }
+
+    @Override
+    public void pay(double amount) {
+        System.out.println("💳 Paid $" + String.format("%.2f", amount) + 
+                         " using Credit Card: **** **** **** " + 
+                         cardNumber.substring(cardNumber.length() - 4));
+    }
+
+    public String getCardNumber() {
+        return cardNumber;
+    }
+}
+```
+
+#### NetBankingPayment.java
+```java
+package com.tomato.strategies;
+
+public class NetBankingPayment implements PaymentStrategy {
+    private String bankName;
+    private String accountNumber;
+
+    public NetBankingPayment(String bankName, String accountNumber) {
+        this.bankName = bankName;
+        this.accountNumber = accountNumber;
+    }
+
+    @Override
+    public void pay(double amount) {
+        System.out.println("💳 Paid $" + String.format("%.2f", amount) + 
+                         " using Net Banking (" + bankName + "): " + 
+                         "****" + accountNumber.substring(accountNumber.length() - 4));
+    }
+}
+```
+
+---
 
 ### 6. Services
 
-#### NotificationService.h
-```cpp
-#ifndef NOTIFICATIONSERVICE_H
-#define NOTIFICATIONSERVICE_H
+#### NotificationService.java
+```java
+package com.tomato.services;
 
-#include "../models/Order.h"
-#include <iostream>
-using namespace std;
+import com.tomato.models.Order;
 
-class NotificationService {
-public:
-    void notify(Order* order) {
-        cout << "\n📧 NOTIFICATION SENT 📧" << endl;
-        cout << "Order ID: " << order->getId() << endl;
-        cout << "User: " << order->getUser()->getName() << endl;
-        cout << "Restaurant: " << order->getRestaurant()->getName() << endl;
-        cout << "Type: " << order->getType() << endl;
-        cout << "Total: $" << order->getTotal() << endl;
-        cout << "Scheduled: " << order->getScheduled() << endl;
-        cout << "Your order has been placed successfully!" << endl;
+public class NotificationService {
+    
+    public void notify(Order order) {
+        System.out.println("\n" + "=".repeat(50));
+        System.out.println("📧 NOTIFICATION SENT 📧");
+        System.out.println("=".repeat(50));
+        System.out.println("Order ID: #" + order.getId());
+        System.out.println("Customer: " + order.getUser().getName());
+        System.out.println("Restaurant: " + order.getRestaurant().getName());
+        System.out.println("Order Type: " + order.getType());
+        System.out.println("Total Amount: $" + String.format("%.2f", order.getTotal()));
+        System.out.println("Scheduled: " + order.getScheduled());
+        System.out.println("\n✅ Your order has been placed successfully!");
+        System.out.println("=".repeat(50) + "\n");
     }
-};
-
-#endif
+}
 ```
 
-### 7. Orchestrator (TomatoApp)
+---
 
-#### TomatoApp.h
-```cpp
-#ifndef TOMATOAPP_H
-#define TOMATOAPP_H
+### 7. Utility Classes
 
-#include "managers/RestaurantManager.h"
-#include "managers/OrderManager.h"
-#include "services/NotificationService.h"
-#include "factories/NowOrderFactory.h"
-#include "factories/ScheduledOrderFactory.h"
-#include <iostream>
-using namespace std;
+#### TimeUtils.java
+```java
+package com.tomato.utils;
 
-class TomatoApp {
-private:
-    RestaurantManager* restaurantManager;
-    OrderManager* orderManager;
-    NotificationService* notificationService;
-    
-    void initializeRestaurants() {
-        // Sample restaurants
-        Restaurant* r1 = new Restaurant("Pizza Hut", "Delhi");
-        r1->addMenuItem(new MenuItem("P001", "Margherita Pizza", 12.99));
-        r1->addMenuItem(new MenuItem("P002", "Pepperoni Pizza", 14.99));
-        
-        Restaurant* r2 = new Restaurant("Burger King", "Delhi");
-        r2->addMenuItem(new MenuItem("B001", "Whopper", 8.99));
-        r2->addMenuItem(new MenuItem("B002", "Chicken Burger", 7.99));
-        
-        Restaurant* r3 = new Restaurant("Subway", "Mumbai");
-        r3->addMenuItem(new MenuItem("S001", "Veggie Sub", 6.99));
-        
-        restaurantManager->addRestaurant(r1);
-        restaurantManager->addRestaurant(r2);
-        restaurantManager->addRestaurant(r3);
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+public class TimeUtils {
+    private static final DateTimeFormatter formatter = 
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    public static String getCurrentTime() {
+        return LocalDateTime.now().format(formatter);
     }
+}
+```
 
-public:
-    TomatoApp() {
-        restaurantManager = RestaurantManager::getInstance();
-        orderManager = OrderManager::getInstance();
-        notificationService = new NotificationService();
+---
+
+### 8. Orchestrator (TomatoApp)
+
+#### TomatoApp.java
+```java
+package com.tomato;
+
+import com.tomato.managers.RestaurantManager;
+import com.tomato.managers.OrderManager;
+import com.tomato.services.NotificationService;
+import com.tomato.factories.*;
+import com.tomato.models.*;
+import com.tomato.strategies.PaymentStrategy;
+
+import java.util.List;
+
+public class TomatoApp {
+    private RestaurantManager restaurantManager;
+    private OrderManager orderManager;
+    private NotificationService notificationService;
+
+    public TomatoApp() {
+        this.restaurantManager = RestaurantManager.getInstance();
+        this.orderManager = OrderManager.getInstance();
+        this.notificationService = new NotificationService();
         initializeRestaurants();
     }
-    
-    vector<Restaurant*> searchRestaurants(string location) {
-        return restaurantManager->searchByLocation(location);
-    }
-    
-    Order* placeOrder(
-        User* user,
-        PaymentStrategy* paymentStrategy,
-        string orderType,
-        bool scheduleForLater = false
-    ) {
-        Cart* cart = user->getCart();
+
+    private void initializeRestaurants() {
+        System.out.println("🍽️ Initializing restaurants...\n");
         
-        if (cart->isEmpty()) {
-            cout << "Cart is empty!" << endl;
-            return nullptr;
+        // Restaurant 1: Pizza Hut
+        Restaurant pizzaHut = new Restaurant("Pizza Hut", "Delhi");
+        pizzaHut.addMenuItem(new MenuItem("P001", "Margherita Pizza", 12.99));
+        pizzaHut.addMenuItem(new MenuItem("P002", "Pepperoni Pizza", 14.99));
+        pizzaHut.addMenuItem(new MenuItem("P003", "Veggie Supreme", 13.99));
+        
+        // Restaurant 2: Burger King
+        Restaurant burgerKing = new Restaurant("Burger King", "Delhi");
+        burgerKing.addMenuItem(new MenuItem("B001", "Whopper", 8.99));
+        burgerKing.addMenuItem(new MenuItem("B002", "Chicken Burger", 7.99));
+        burgerKing.addMenuItem(new MenuItem("B003", "Veggie Burger", 6.99));
+        
+        // Restaurant 3: Subway
+        Restaurant subway = new Restaurant("Subway", "Mumbai");
+        subway.addMenuItem(new MenuItem("S001", "Veggie Delite Sub", 6.99));
+        subway.addMenuItem(new MenuItem("S002", "Chicken Teriyaki", 8.99));
+        
+        // Restaurant 4: Domino's
+        Restaurant dominos = new Restaurant("Domino's Pizza", "Delhi");
+        dominos.addMenuItem(new MenuItem("D001", "Farmhouse Pizza", 11.99));
+        dominos.addMenuItem(new MenuItem("D002", "Chicken Dominator", 15.99));
+        
+        restaurantManager.addRestaurant(pizzaHut);
+        restaurantManager.addRestaurant(burgerKing);
+        restaurantManager.addRestaurant(subway);
+        restaurantManager.addRestaurant(dominos);
+        
+        System.out.println();
+    }
+
+    public List<Restaurant> searchRestaurants(String location) {
+        return restaurantManager.searchByLocation(location);
+    }
+
+    public Order placeOrder(
+        User user,
+        PaymentStrategy paymentStrategy,
+        String orderType,
+        boolean scheduleForLater
+    ) {
+        Cart cart = user.getCart();
+        
+        if (cart.isEmpty()) {
+            System.out.println("❌ Cart is empty! Please add items first.");
+            return null;
         }
         
-        OrderFactory* factory;
+        // Select appropriate factory
+        OrderFactory factory;
         if (scheduleForLater) {
             factory = new ScheduledOrderFactory();
+            System.out.println("📅 Creating SCHEDULED order...");
         } else {
             factory = new NowOrderFactory();
+            System.out.println("⚡ Creating IMMEDIATE order...");
         }
         
-        Order* order = factory->createOrder(
+        // Create order
+        Order order = factory.createOrder(
             user,
             cart,
-            cart->getRestaurant(),
-            cart->getItems(),
+            cart.getRestaurant(),
+            cart.getItems(),
             paymentStrategy,
             orderType,
-            cart->getTotalCost()
+            cart.getTotalCost()
         );
         
+        if (order == null) {
+            System.out.println("❌ Failed to create order!");
+            return null;
+        }
+        
         // Process payment
-        order->processPayment();
+        System.out.println("\n💰 Processing payment...");
+        order.processPayment();
         
         // Add to order manager
-        orderManager->addOrder(order);
+        orderManager.addOrder(order);
         
         // Send notification
-        notificationService->notify(order);
+        notificationService.notify(order);
         
         // Clear cart
-        cart->clear();
+        cart.clear();
         
-        delete factory;
         return order;
     }
-    
-    void listAllOrders() {
-        orderManager->listOrders();
-    }
-};
 
-#endif
+    public void listAllOrders() {
+        orderManager.listOrders();
+    }
+
+    public void listAllRestaurants() {
+        restaurantManager.listAllRestaurants();
+    }
+}
 ```
 
-### 8. Utility Classes
-
-#### TimeUtils.h
-```cpp
-#ifndef TIMEUTILS_H
-#define TIMEUTILS_H
-
-#include <string>
-#include <ctime>
-using namespace std;
-
-class TimeUtils {
-public:
-    static string getCurrentTime() {
-        time_t now = time(0);
-        char* dt = ctime(&now);
-        return string(dt);
-    }
-};
-
-#endif
-```
+---
 
 ### 9. Main Driver Code
 
-```cpp
-#include "TomatoApp.h"
-#include "strategies/UPIPayment.h"
-#include "strategies/CreditCardPayment.h"
-#include <iostream>
-using namespace std;
+#### Main.java
+```java
+package com.tomato;
 
-int main() {
-    // Initialize the app
-    TomatoApp* app = new TomatoApp();
-    
-    // Create a user
-    User* user = new User(1, "Anubhav", "123 Main St, Delhi");
-    
-    // Search restaurants in Delhi
-    cout << "🔍 Searching restaurants in Delhi..." << endl;
-    vector<Restaurant*> restaurants = app->searchRestaurants("Delhi");
-    
-    cout << "\nFound " << restaurants.size() << " restaurants:" << endl;
-    for (auto r : restaurants) {
-        cout << "- " << r->getName() << " (" << r->getLocation() << ")" << endl;
+import com.tomato.models.*;
+import com.tomato.strategies.*;
+import java.util.List;
+
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("🍅 Welcome to TOMATO - Food Delivery App 🍅\n");
+        System.out.println("=".repeat(60));
+        
+        // Initialize the application
+        TomatoApp app = new TomatoApp();
+        
+        // Create a user
+        User user = new User(1, "Anubhav Garg", "123 Main Street, Connaught Place, Delhi");
+        System.out.println("👤 User created: " + user + "\n");
+        
+        // Search restaurants in Delhi
+        System.out.println("🔍 Searching for restaurants in Delhi...\n");
+        List<Restaurant> restaurants = app.searchRestaurants("Delhi");
+        
+        System.out.println("Found " + restaurants.size() + " restaurants:");
+        for (int i = 0; i < restaurants.size(); i++) {
+            Restaurant r = restaurants.get(i);
+            System.out.println((i + 1) + ". " + r.getName() + " - " + r.getLocation());
+        }
+        System.out.println();
+        
+        // ========== ORDER 1: DELIVERY ORDER (NOW) ==========
+        System.out.println("=".repeat(60));
+        System.out.println("📦 ORDER 1: DELIVERY ORDER (IMMEDIATE)");
+        System.out.println("=".repeat(60));
+        
+        // Select Pizza Hut
+        Restaurant pizzaHut = restaurants.get(0);
+        user.getCart().setRestaurant(pizzaHut);
+        System.out.println("🍕 Selected restaurant: " + pizzaHut.getName() + "\n");
+        
+        // Add items to cart
+        System.out.println("🛒 Adding items to cart:");
+        List<MenuItem> pizzaMenu = pizzaHut.getMenu();
+        user.getCart().addItem(pizzaMenu.get(0)); // Margherita Pizza
+        user.getCart().addItem(pizzaMenu.get(1)); // Pepperoni Pizza
+        
+        System.out.println("\n💵 Cart Total: $" + 
+                         String.format("%.2f", user.getCart().getTotalCost()));
+        
+        // Place order with UPI payment
+        PaymentStrategy upiPayment = new UPIPayment("9876543210");
+        Order order1 = app.placeOrder(user, upiPayment, "DELIVERY", false);
+        
+        System.out.println("\n" + "=".repeat(60) + "\n");
+        
+        // ========== ORDER 2: PICKUP ORDER (SCHEDULED) ==========
+        System.out.println("=".repeat(60));
+        System.out.println("📦 ORDER 2: PICKUP ORDER (SCHEDULED)");
+        System.out.println("=".repeat(60));
+        
+        // Select Burger King
+        Restaurant burgerKing = restaurants.get(1);
+        user.getCart().setRestaurant(burgerKing);
+        System.out.println("🍔 Selected restaurant: " + burgerKing.getName() + "\n");
+        
+        // Add items to cart
+        System.out.println("🛒 Adding items to cart:");
+        List<MenuItem> burgerMenu = burgerKing.getMenu();
+        user.getCart().addItem(burgerMenu.get(0)); // Whopper
+        user.getCart().addItem(burgerMenu.get(2)); // Veggie Burger
+        
+        System.out.println("\n💵 Cart Total: $" + 
+                         String.format("%.2f", user.getCart().getTotalCost()));
+        
+        // Place scheduled pickup order with Credit Card
+        PaymentStrategy cardPayment = new CreditCardPayment("1234-5678-9012-3456");
+        Order order2 = app.placeOrder(user, cardPayment, "PICKUP", true);
+        
+        System.out.println("\n" + "=".repeat(60) + "\n");
+        
+        // ========== ORDER 3: DELIVERY ORDER WITH NET BANKING ==========
+        System.out.println("=".repeat(60));
+        System.out.println("📦 ORDER 3: DELIVERY ORDER (NET BANKING)");
+        System.out.println("=".repeat(60));
+        
+        // Select Domino's
+        Restaurant dominos = restaurants.get(3);
+        user.getCart().setRestaurant(dominos);
+        System.out.println("🍕 Selected restaurant: " + dominos.getName() + "\n");
+        
+        // Add items to cart
+        System.out.println("🛒 Adding items to cart:");
+        List<MenuItem> dominosMenu = dominos.getMenu();
+        user.getCart().addItem(dominosMenu.get(0)); // Farmhouse Pizza
+        user.getCart().addItem(dominosMenu.get(1)); // Chicken Dominator
+        
+        System.out.println("\n💵 Cart Total: $" + 
+                         String.format("%.2f", user.getCart().getTotalCost()));
+        
+        // Place order with Net Banking
+        PaymentStrategy netBanking = new NetBankingPayment("HDFC Bank", "9876543210");
+        Order order3 = app.placeOrder(user, netBanking, "DELIVERY", false);
+        
+        System.out.println("\n" + "=".repeat(60) + "\n");
+        
+        // ========== DISPLAY ALL ORDERS ==========
+        app.listAllOrders();
+        
+        // ========== DISPLAY ALL RESTAURANTS ==========
+        app.listAllRestaurants();
+        
+        System.out.println("\n🎉 Thank you for using TOMATO! 🍅");
     }
-    
-    // Select a restaurant and add items to cart
-    Restaurant* selectedRestaurant = restaurants[0];
-    user->getCart()->setRestaurant(selectedRestaurant);
-    
-    cout << "\n🍕 Adding items to cart from " 
-         << selectedRestaurant->getName() << endl;
-    
-    vector<MenuItem*> menu = selectedRestaurant->getMenu();
-    user->getCart()->addItem(menu[0]); // Margherita Pizza
-    user->getCart()->addItem(menu[1]); // Pepperoni Pizza
-    
-    cout << "Cart Total: $" << user->getCart()->getTotalCost() << endl;
-    
-    // Place order with UPI payment
-    cout << "\n📦 Placing DELIVERY order..." << endl;
-    PaymentStrategy* upiPayment = new UPIPayment("9876543210");
-    Order* order1 = app->placeOrder(user, upiPayment, "DELIVERY", false);
-    
-    // Add more items for second order
-    user->getCart()->setRestaurant(restaurants[1]);
-    user->getCart()->addItem(restaurants[1]->getMenu()[0]);
-    
-    // Place scheduled pickup order
-    cout << "\n📦 Placing SCHEDULED PICKUP order..." << endl;
-    PaymentStrategy* cardPayment = new CreditCardPayment("1234-5678-9012");
-    Order* order2 = app->placeOrder(user, cardPayment, "PICKUP", true);
-    
-    // List all orders
-    app->listAllOrders();
-    
-    // Cleanup
-    delete app;
-    delete user;
-    delete upiPayment;
-    delete cardPayment;
-    
-    return 0;
 }
+```
+
+---
+
+### 10. Expected Output
+
+```
+🍅 Welcome to TOMATO - Food Delivery App 🍅
+
+============================================================
+🍽️ Initializing restaurants...
+
+✅ Restaurant added: Pizza Hut
+✅ Restaurant added: Burger King
+✅ Restaurant added: Subway
+✅ Restaurant added: Domino's Pizza
+
+👤 User created: Anubhav Garg (123 Main Street, Connaught Place, Delhi)
+
+🔍 Searching for restaurants in Delhi...
+
+Found 3 restaurants:
+1. Pizza Hut - Delhi
+2. Burger King - Delhi
+3. Domino's Pizza - Delhi
+
+============================================================
+📦 ORDER 1: DELIVERY ORDER (IMMEDIATE)
+============================================================
+🍕 Selected restaurant: Pizza Hut
+
+🛒 Adding items to cart:
+✅ Added: Margherita Pizza to cart
+✅ Added: Pepperoni Pizza to cart
+
+💵 Cart Total: $27.98
+⚡ Creating IMMEDIATE order...
+
+💰 Processing payment...
+💳 Paid $27.98 using UPI: 9876543210
+✅ Order added to system: Order #0
+
+==================================================
+📧 NOTIFICATION SENT 📧
+==================================================
+Order ID: #0
+Customer: Anubhav Garg
+Restaurant: Pizza Hut
+Order Type: DELIVERY
+Total Amount: $27.98
+Scheduled: 2026-01-20 23:56:03
+
+✅ Your order has been placed successfully!
+==================================================
+
+🗑️ Cart cleared
+
+============================================================
+
+============================================================
+📦 ORDER 2: PICKUP ORDER (SCHEDULED)
+============================================================
+🍔 Selected restaurant: Burger King
+
+🛒 Adding items to cart:
+✅ Added: Whopper to cart
+✅ Added: Veggie Burger to cart
+
+💵 Cart Total: $15.98
+📅 Creating SCHEDULED order...
+
+💰 Processing payment...
+💳 Paid $15.98 using Credit Card: **** **** **** 3456
+✅ Order added to system: Order #1
+
+==================================================
+📧 NOTIFICATION SENT 📧
+==================================================
+Order ID: #1
+Customer: Anubhav Garg
+Restaurant: Burger King
+Order Type: PICKUP
+Total Amount: $15.98
+Scheduled: 2026-01-21 18:00:00
+
+✅ Your order has been placed successfully!
+==================================================
+
+🗑️ Cart cleared
+
+============================================================
+
+========== ALL ORDERS ==========
+Order #0 | Type: DELIVERY | Total: $27.98 | Restaurant: Pizza Hut
+Order #1 | Type: PICKUP | Total: $15.98 | Restaurant: Burger King
+Order #2 | Type: DELIVERY | Total: $27.98 | Restaurant: Domino's Pizza
+================================
+
+=== All Restaurants ===
+- Pizza Hut (Delhi)
+- Burger King (Delhi)
+- Subway (Mumbai)
+- Domino's Pizza (Delhi)
+
+🎉 Thank you for using TOMATO! 🍅
 ```
 
 ---
