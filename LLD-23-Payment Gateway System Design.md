@@ -297,6 +297,7 @@ A **Gateway** is the entry/exit point of your application for external communica
 <details open>
 <summary>Complete-Java-Code</summary>
     ```java
+    
     import java.util.*;
 
 // ----------------------------
