@@ -143,40 +143,15 @@ Factory pattern ke **3 types** hain:
 
 ### Class Hierarchy
 
-```
-┌─────────────────┐
-│  <<abstract>>   │
-│     Burger      │
-├─────────────────┤
-│ + prepare()     │ ← Virtual method
-└─────────────────┘
-         △
-         │ extends
-    ┌────┼────┬────────┐
-    │    │    │        │
-┌───┴─┐ ┌┴──┐ ┌┴──────┐
-│Basic│ │Std│ │Premium│
-│Burger│ │Burger│ │Burger│
-├────┤ ├───┤ ├───────┤
-│+prepare│ │+prepare│ │+prepare│
-└────┘ └───┘ └───────┘
-```
+<img width="836" height="409" alt="image" src="https://github.com/user-attachments/assets/60edf0e8-85b1-4801-8c06-a2191337ca90" />
+
 
 ### Simple Factory Class
 
-```
-┌─────────────────────┐
-│   BurgerFactory     │
-├─────────────────────┤
-│ + createBurger(type)│ ← Returns Burger
-└─────────────────────┘
-         │
-         │ has-a
-         ▼
-┌─────────────────┐
-│     Burger      │
-└─────────────────┘
-```
+<img width="531" height="417" alt="image" src="https://github.com/user-attachments/assets/992cbe07-9aca-43e9-95cd-b083e8a24acb" />
+<img width="650" height="162" alt="image" src="https://github.com/user-attachments/assets/11254760-7576-4253-905f-5ae4347adb77" />
+
+
 
 ### Java Implementation
 
@@ -251,31 +226,6 @@ Preparing Standard Burger with bun, patty, cheese, and lettuce
 
 ### Simple Factory - Standard UML
 
-```
-┌─────────────┐
-│   Product   │ ← Abstract class/Interface
-├─────────────┤
-│ + method()  │
-└─────────────┘
-       △
-       │ extends
-   ┌───┼───┬────────┐
-   │   │   │        │
-┌──┴┐ ┌┴─┐ ┌┴──┐ ┌─┴──┐
-│CP1│ │CP2│ │CP3│ │CP4 │ ← Concrete Products
-└───┘ └──┘ └───┘ └────┘
-   ↑   ↑   ↑     ↑
-   │   │   │     │
-   └───┴───┴─────┘
-         │
-         │ creates
-┌─────────────────┐
-│    Factory      │
-├─────────────────┤
-│ + create(type)  │
-└─────────────────┘
-```
-
 ### Definition
 
 > **Simple Factory:** A factory class that decides which concrete class to instantiate
@@ -305,49 +255,10 @@ Preparing Standard Burger with bun, patty, cheese, and lettuce
 
 ### Extended Product Hierarchy
 
-```
-┌─────────────────┐
-│     Burger      │
-└─────────────────┘
-         △
-         │
-    ┌────┴────┬──────────────────────┐
-    │         │                      │
-┌───┴────┐ ┌──┴──────┐ ┌────────────┴─────┐
-│ Basic  │ │Standard │ │    Premium       │
-│ Burger │ │ Burger  │ │    Burger        │
-└────────┘ └─────────┘ └──────────────────┘
+<img width="1440" height="819" alt="image" src="https://github.com/user-attachments/assets/c7a9d80d-f228-4454-ae41-b8c4760eb86f" />
 
-┌────────────┐ ┌──────────────┐ ┌────────────────┐
-│ BasicWheat │ │StandardWheat │ │ PremiumWheat   │
-│   Burger   │ │   Burger     │ │    Burger      │
-└────────────┘ └──────────────┘ └────────────────┘
-```
 
 ### Factory Hierarchy
-
-```
-┌─────────────────────┐
-│  <<abstract>>       │
-│   BurgerFactory     │
-├─────────────────────┤
-│ + createBurger()    │ ← Virtual method
-└─────────────────────┘
-         △
-         │ extends
-    ┌────┴────┐
-    │         │
-┌───┴──────┐ ┌┴──────────┐
-│  Sing    │ │   King    │
-│ Burger   │ │  Burger   │
-├──────────┤ ├───────────┤
-│+create() │ │ +create() │
-└──────────┘ └───────────┘
-     │            │
-     │            │
-     ▼            ▼
-Normal Burgers  Wheat Burgers
-```
 
 ### Java Implementation
 
@@ -470,40 +381,9 @@ Preparing Basic Burger with one patty and ketchup
 
 ### Factory Method - Standard UML
 
-```
-┌─────────────┐
-│   Product   │
-└─────────────┘
-       △
-       │
-   ┌───┴───┬────────┐
-   │       │        │
-┌──┴──┐ ┌─┴──┐ ┌───┴──┐
-│CP-A1│ │CP-A2│ │CP-A3 │
-└─────┘ └────┘ └──────┘
+<img width="1058" height="820" alt="image" src="https://github.com/user-attachments/assets/7e75fe7b-f811-4d42-a988-273e15a0441b" />
+<img width="613" height="250" alt="image" src="https://github.com/user-attachments/assets/7a5975ef-0e51-4138-852a-8722906df7fd" />
 
-┌──────┐ ┌─────┐ ┌──────┐
-│CP-B1 │ │CP-B2│ │CP-B3 │
-└──────┘ └─────┘ └──────┘
-   ↑       ↑       ↑
-   │       │       │
-   └───────┴───────┘
-           │
-┌──────────┴─────────┐
-│  <<abstract>>      │
-│     Factory        │
-├────────────────────┤
-│ + createProduct()  │
-└────────────────────┘
-         △
-         │
-    ┌────┴────┐
-    │         │
-┌───┴────┐ ┌─┴────────┐
-│Factory │ │ Factory  │
-│   A    │ │    B     │
-└────────┘ └──────────┘
-```
 
 ### Definition
 
@@ -557,6 +437,8 @@ GarlicBread
 ```
 
 ### Factory Hierarchy
+<img width="1238" height="692" alt="image" src="https://github.com/user-attachments/assets/4702d815-f59a-4dba-b970-fa644b3157fc" />
+
 
 ```
 ┌─────────────────────────┐
