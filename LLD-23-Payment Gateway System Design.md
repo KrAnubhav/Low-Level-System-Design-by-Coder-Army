@@ -155,7 +155,320 @@ A standardized payment flow with required validations:
 
 ---
 
-## 🚪 Understanding Gateway Concept
+## � End-to-End Flow Explanation
+
+### Complete Payment Processing Flow
+
+Let's understand how a payment request flows through our entire system, step by step.
+
+#### Step-by-Step Flow
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                    STEP 1: Client Creates Request                │
+└──────────────────────────────────────────────────────────────────┘
+
+Client Application (Amazon/Zomato/Swiggy)
+    │
+    │ Creates PaymentRequest object
+    │ - sender: "Alice"
+    │ - receiver: "Bob"  
+    │ - amount: 1000.0
+    │ - currency: "INR"
+    │
+    ↓
+
+┌──────────────────────────────────────────────────────────────────┐
+│              STEP 2: Call Payment Controller                     │
+└──────────────────────────────────────────────────────────────────┘
+
+PaymentController.getInstance()
+    │
+    │ handlePayment(paymentRequest, GatewayType.PAYTM)
+    │
+    ↓
+
+┌──────────────────────────────────────────────────────────────────┐
+│              STEP 3: Factory Creates Gateway                     │
+└──────────────────────────────────────────────────────────────────┘
+
+GatewayFactory.getInstance()
+    │
+    │ createGateway(GatewayType.PAYTM)
+    │
+    ├─→ Creates PaytmGateway instance
+    │   └─→ Initializes PaytmBankingSystem
+    │
+    ├─→ Wraps in PaymentGatewayProxy
+    │   └─→ Sets maxRetries = 3 (for Paytm)
+    │
+    └─→ Returns PaymentGatewayProxy(PaytmGateway)
+
+┌──────────────────────────────────────────────────────────────────┐
+│              STEP 4: Set Gateway in Service                      │
+└──────────────────────────────────────────────────────────────────┘
+
+PaymentService
+    │
+    │ setGateway(paymentGatewayProxy)
+    │
+    └─→ Stores reference to gateway
+
+┌──────────────────────────────────────────────────────────────────┐
+│              STEP 5: Process Payment (Proxy Layer)               │
+└──────────────────────────────────────────────────────────────────┘
+
+PaymentGatewayProxy.processPayment(paymentRequest)
+    │
+    │ Retry Loop (attempts = 0; attempts < 3)
+    │
+    ├─→ Attempt 1:
+    │   │
+    │   ├─→ Calls real.processPayment(pr)
+    │   │   └─→ Delegates to PaytmGateway
+    │   │
+    │   └─→ If fails: attempts++, retry
+    │
+    ├─→ Attempt 2:
+    │   │
+    │   ├─→ Calls real.processPayment(pr)
+    │   │
+    │   └─→ If succeeds: return true
+    │
+    └─→ If all attempts fail: return false
+
+┌──────────────────────────────────────────────────────────────────┐
+│         STEP 6: Template Method (PaytmGateway)                   │
+└──────────────────────────────────────────────────────────────────┘
+
+PaytmGateway.processPayment(paymentRequest)
+    │
+    │ Template Method enforces order:
+    │
+    ├─→ Step 6a: validate(paymentRequest)
+    │   │
+    │   ├─→ Check amount > 0
+    │   ├─→ Check currency == "INR"
+    │   ├─→ Check sender/receiver valid
+    │   │
+    │   └─→ If validation fails: throw Exception
+    │
+    ├─→ Step 6b: initiate(paymentRequest)
+    │   │
+    │   ├─→ Prepare payment request
+    │   ├─→ Log initiation
+    │   │
+    │   └─→ If initiation fails: throw Exception
+    │
+    ├─→ Step 6c: confirm(paymentRequest)
+    │   │
+    │   ├─→ Calls ibs.processPayment(amount)
+    │   │   └─→ PaytmBankingSystem.processPayment(1000.0)
+    │   │
+    │   └─→ If confirmation fails: throw Exception
+    │
+    └─→ Return true (all steps succeeded)
+
+┌──────────────────────────────────────────────────────────────────┐
+│         STEP 7: Banking System Processing                       │
+└──────────────────────────────────────────────────────────────────┘
+
+PaytmBankingSystem.processPayment(1000.0)
+    │
+    ├─→ Makes HTTP call to Paytm servers
+    │   └─→ Sends payment request over internet
+    │
+    ├─→ Paytm Banking System processes payment
+    │   ├─→ Checks account balance
+    │   ├─→ Verifies transaction
+    │   └─→ Deducts amount
+    │
+    └─→ Returns success/failure (boolean)
+
+┌──────────────────────────────────────────────────────────────────┐
+│         STEP 8: Response Propagation                            │
+└──────────────────────────────────────────────────────────────────┘
+
+Response flows back through layers:
+
+PaytmBankingSystem (returns true/false)
+    ↓
+PaytmGateway.confirm() (returns true/false)
+    ↓
+PaytmGateway.processPayment() (returns true/false)
+    ↓
+PaymentGatewayProxy.processPayment() (handles retry)
+    ↓
+PaymentService.processPayment() (returns true/false)
+    ↓
+PaymentController.handlePayment() (returns true/false)
+    ↓
+Client Application (receives final result)
+
+┌──────────────────────────────────────────────────────────────────┐
+│         STEP 9: Client Receives Response                        │
+└──────────────────────────────────────────────────────────────────┘
+
+Client Application
+    │
+    ├─→ If result == true:
+    │   └─→ Payment successful!
+    │       └─→ Show success message to user
+    │
+    └─→ If result == false:
+        └─→ Payment failed!
+            └─→ Show error message to user
+```
+
+### Detailed Flow with Example
+
+**Scenario**: User pays ₹1000 on Zomato using Paytm
+
+```java
+// 1. Zomato creates payment request
+PaymentRequest request = new PaymentRequest("User123", "Zomato", 1000.0, "INR");
+
+// 2. Zomato calls Payment Controller
+PaymentController controller = PaymentController.getInstance();
+boolean result = controller.handlePayment(request, GatewayType.PAYTM);
+
+// Inside handlePayment():
+// 3. Factory creates gateway
+GatewayFactory factory = GatewayFactory.getInstance();
+PaymentGateway gateway = factory.createGateway(GatewayType.PAYTM);
+    // Creates: PaytmGateway
+    // Wraps in: PaymentGatewayProxy (3 retries)
+
+// 4. Set gateway in service
+paymentService.setGateway(gateway);
+
+// 5. Process payment
+boolean result = paymentService.processPayment(request);
+    // Calls: PaymentGatewayProxy.processPayment()
+    
+    // Inside Proxy:
+    // Attempt 1:
+    //   PaytmGateway.processPayment()
+    //     → validate() ✓
+    //     → initiate() ✓
+    //     → confirm() → PaytmBankingSystem.processPayment()
+    //         → HTTP call to Paytm
+    //         → Returns: false (payment failed)
+    //   Result: Failed, retry...
+    
+    // Attempt 2:
+    //   PaytmGateway.processPayment()
+    //     → validate() ✓
+    //     → initiate() ✓
+    //     → confirm() → PaytmBankingSystem.processPayment()
+    //         → HTTP call to Paytm
+    //         → Returns: true (payment success!)
+    //   Result: Success!
+    
+    // Returns: true
+
+// 6. Zomato receives result
+if (result) {
+    System.out.println("Payment successful! Order confirmed.");
+} else {
+    System.out.println("Payment failed! Please try again.");
+}
+```
+
+### Key Points in the Flow
+
+1. **Single Entry Point**: 
+   - Client only interacts with `PaymentController`
+   - No need to know about internal classes
+
+2. **Factory Pattern**:
+   - Factory decides which gateway to create
+   - Automatically wraps in proxy for retry
+
+3. **Proxy Pattern**:
+   - Transparently adds retry mechanism
+   - Client doesn't know about retries
+
+4. **Template Method**:
+   - Enforces Validate → Initiate → Confirm order
+   - Cannot skip or reorder steps
+
+5. **Separation of Concerns**:
+   - Controller: Entry point
+   - Service: Business logic
+   - Gateway: Payment processing
+   - Proxy: Cross-cutting concerns (retry)
+   - Banking System: External communication
+
+### Flow Diagram with Retry Scenario
+
+```
+Client Request (₹1000)
+    ↓
+PaymentController
+    ↓
+GatewayFactory
+    ├─→ Creates PaytmGateway
+    └─→ Wraps in Proxy (3 retries)
+    ↓
+PaymentService
+    ↓
+PaymentGatewayProxy
+    │
+    ├─→ Attempt 1:
+    │   ├─→ PaytmGateway.processPayment()
+    │   │   ├─→ validate() ✓
+    │   │   ├─→ initiate() ✓
+    │   │   └─→ confirm() → Paytm API → ✗ FAILED
+    │   └─→ Retry...
+    │
+    ├─→ Attempt 2:
+    │   ├─→ PaytmGateway.processPayment()
+    │   │   ├─→ validate() ✓
+    │   │   ├─→ initiate() ✓
+    │   │   └─→ confirm() → Paytm API → ✓ SUCCESS
+    │   └─→ Return true
+    │
+    ↓
+Client receives SUCCESS
+```
+
+### What Happens at Each Layer?
+
+| Layer | Responsibility | What It Does |
+|-------|---------------|--------------|
+| **Client** | Initiate payment | Creates PaymentRequest, calls controller |
+| **Controller** | Entry point | Routes request to service |
+| **Factory** | Object creation | Creates appropriate gateway + proxy |
+| **Service** | Business logic | Manages gateway, processes payment |
+| **Proxy** | Retry mechanism | Retries on failure, delegates to real gateway |
+| **Gateway** | Payment flow | Validates → Initiates → Confirms |
+| **Banking System** | External API | Makes HTTP call to Paytm/Razorpay |
+
+### Error Handling in Flow
+
+```
+PaymentGatewayProxy (Retry Layer)
+    │
+    ├─→ Try: real.processPayment()
+    │   │
+    │   └─→ PaytmGateway.processPayment()
+    │       │
+    │       ├─→ validate() → throws Exception
+    │       │   └─→ Caught by Proxy → Retry
+    │       │
+    │       ├─→ initiate() → throws Exception
+    │       │   └─→ Caught by Proxy → Retry
+    │       │
+    │       └─→ confirm() → throws Exception
+    │           └─→ Caught by Proxy → Retry
+    │
+    └─→ After maxRetries: return false
+```
+
+---
+
+## �🚪 Understanding Gateway Concept
 
 ### What is a Gateway?
 
