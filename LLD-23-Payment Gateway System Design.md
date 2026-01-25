@@ -294,6 +294,12 @@ A **Gateway** is the entry/exit point of your application for external communica
 
 ## 🎭 Design Patterns Used
 
+<details open>
+<summary>Complete-Java-Code</summary>
+
+This section is visible by default.
+</details>
+
 ### 1. Template Method Pattern
 
 **Used in**: `PaymentGateway` class
