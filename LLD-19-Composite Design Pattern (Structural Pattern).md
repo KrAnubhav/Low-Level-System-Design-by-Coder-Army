@@ -34,6 +34,8 @@ If you're working on a real-world project or facing an interview problem that di
 ---
 
 ## 🤔 What is Composite Design Pattern?
+<img width="900" height="298" alt="image" src="https://github.com/user-attachments/assets/7be5dbfd-9ad7-48ba-a852-2c4cbc9b5ca3" />
+
 
 **Simple Definition**: If you have a background in Data Structures and have studied **Trees**, then you already understand the Composite Design Pattern. You've used it!
 
@@ -157,6 +159,8 @@ void openAll() {
 ---
 
 ## ✅ Solution: Composite Design Pattern
+<img width="671" height="449" alt="image" src="https://github.com/user-attachments/assets/92dace0e-030b-4c64-b2d0-cbd140e7484b" />
+
 
 ### The Core Principle
 
@@ -343,6 +347,8 @@ class Folder implements FileSystemItem {
 ## 📊 UML Diagrams
 
 ### Class Diagram
+<img width="569" height="457" alt="image" src="https://github.com/user-attachments/assets/9ea9974d-2649-423f-b4be-8972286d446c" />
+
 
 ```
 ┌─────────────────────────────┐

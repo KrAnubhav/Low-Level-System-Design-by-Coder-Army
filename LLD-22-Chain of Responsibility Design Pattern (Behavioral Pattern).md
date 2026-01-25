@@ -194,6 +194,8 @@ Client
 ### Better Approach (Loosely Coupled)
 
 **Solution**: Use abstraction!
+<img width="500" height="425" alt="image" src="https://github.com/user-attachments/assets/d7dce8a2-6a4d-44b8-93f8-fbc5ef035efb" />
+
 
 ```
 ┌─────────────────────┐
@@ -235,6 +237,9 @@ Client
 ## 📊 UML Diagrams
 
 ### Class Diagram
+<img width="488" height="351" alt="image" src="https://github.com/user-attachments/assets/d116735c-d029-44df-8168-844a75d2fca4" />
+<img width="540" height="201" alt="image" src="https://github.com/user-attachments/assets/93e4ea0c-6205-4c04-b5fe-0ab1dc7ae8a2" />
+
 
 ```
 ┌─────────────────────────────┐

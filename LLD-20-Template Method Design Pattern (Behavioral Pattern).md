@@ -38,6 +38,8 @@ Let's dive in!
 ---
 
 ## 🤔 What is Template Method Pattern?
+<img width="620" height="315" alt="image" src="https://github.com/user-attachments/assets/2cd9393c-bcff-4edc-9c78-a15315f143e7" />
+
 
 **Core Concept**: The Template Method Pattern defines the **skeleton of an algorithm** in a base class, but lets subclasses **override specific steps** without changing the algorithm's structure.
 
@@ -262,6 +264,8 @@ public class Client {
 ## 📊 UML Diagrams
 
 ### Class Diagram
+<img width="685" height="445" alt="image" src="https://github.com/user-attachments/assets/77104b33-0083-44e1-a678-9d42794bdfd0" />
+
 
 ```
 ┌─────────────────────────────────────┐
