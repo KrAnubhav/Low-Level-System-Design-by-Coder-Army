@@ -103,6 +103,8 @@ A standardized payment flow with required validations:
 ---
 
 ## 🔄 System Flow
+<img width="2732" height="1707" alt="image" src="https://github.com/user-attachments/assets/0d6933de-c4d1-4948-aae5-df8f70ea695b" />
+
 
 ### Happy Flow Diagram
 
